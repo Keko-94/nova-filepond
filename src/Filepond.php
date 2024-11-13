@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\File as SymfonyFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Nova\Fields\File;
@@ -46,6 +47,11 @@ class Filepond extends File
     public function disable(): self
     {
         return $this->withMeta([ 'disabled' => true ]);
+    }
+
+    public function autoDeleting($autoDeleting): self
+    {
+        return $this->withMeta([ 'autoDeleting' => $autoDeleting ]);
     }
 
     public function disableCredits(): self
@@ -214,11 +220,13 @@ class Filepond extends File
 
         return function () use ($callbacks, $toDelete): void {
 
-            /**
-             * Delete every file that is not in the new result
-             */
-            foreach ($toDelete as $file) {
-                Storage::disk($this->getStorageDisk())->delete($file);
+            if ($this->meta['autoDeleting'] ?? true) {
+                /**
+                 * Delete every file that is not in the new result
+                 */
+                foreach ($toDelete as $file) {
+                    Storage::disk($this->getStorageDisk())->delete($file);
+                }
             }
 
             /**
